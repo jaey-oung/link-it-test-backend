@@ -78,6 +78,6 @@ jobs:
           docker-compose down
           
           docker pull ${{ secrets.NCR_REGISTRY }}/link-it-backend:latest
-          docker-compose up -d
+          docker compose -f docker-compose.prod.yml up -d
           
           docker image prune -f
