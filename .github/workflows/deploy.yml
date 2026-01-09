@@ -68,6 +68,7 @@ jobs:
         host: ${{ secrets.NCP_HOST }}
         username: root
         key: ${{ secrets.NCP_SSH_KEY }}
+        command_timeout: 30m
         script: |
           cd /home/ubuntu/app
           
@@ -75,7 +76,7 @@ jobs:
             -u ${{ secrets.NCR_ACCESS_KEY_ID }} \
             --password-stdin
           
-          docker-compose down
+          docker compose -f docker-compose.prod.yml down
           
           docker pull ${{ secrets.NCR_REGISTRY }}/link-it-backend:latest
           docker compose -f docker-compose.prod.yml up -d
