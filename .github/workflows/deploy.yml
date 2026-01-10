@@ -42,25 +42,7 @@ jobs:
         docker push $IMAGE_TAG
         docker tag $IMAGE_TAG ${{ secrets.NCR_REGISTRY }}/link-it-backend:latest
         docker push ${{ secrets.NCR_REGISTRY }}/link-it-backend:latest
-    
-    # 서버용 .env 파일 생성
-    - name: Create .env file
-      run: |
-        echo "DB_ROOT_PASSWORD=${{ secrets.DB_ROOT_PASSWORD }}" > .env
-        echo "DB_NAME=linkitdb" >> .env
-        echo "DB_USER=linkituser" >> .env
-        echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-    
-    # docker-compose.prod.yml과 .env 파일을 서버로 복사
-    - name: Copy files to NCP
-      uses: appleboy/scp-action@master
-      with:
-        host: ${{ secrets.NCP_HOST }}
-        username: root
-        key: ${{ secrets.NCP_SSH_KEY }}
-        source: "docker-compose.prod.yml,.env"
-        target: "/home/ubuntu/app"
-    
+
     # 서버에서 Docker 컨테이너 배포
     - name: Deploy on NCP
       uses: appleboy/ssh-action@master
@@ -72,13 +54,21 @@ jobs:
         script: |
           cd /home/ubuntu/app
           
+          cat > .env << 'EOF'
+          DB_ROOT_PASSWORD=${{ secrets.DB_ROOT_PASSWORD }}
+          DB_NAME=linkitdb
+          DB_USER=linkituser
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          EOF
+          
           echo ${{ secrets.NCR_ACCESS_KEY }} | docker login ${{ secrets.NCR_REGISTRY }} \
             -u ${{ secrets.NCR_ACCESS_KEY_ID }} \
             --password-stdin
           
-          docker compose -f docker-compose.prod.yml down
+          docker compose -f docker-compose.prod.yml down || true
           
           docker pull ${{ secrets.NCR_REGISTRY }}/link-it-backend:latest
+          
           docker compose -f docker-compose.prod.yml up -d
           
           docker image prune -f
